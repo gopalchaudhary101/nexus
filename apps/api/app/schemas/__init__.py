@@ -297,7 +297,7 @@ class RiskAnalyticsOut(BaseModel):
 
 
 # ── notifications ──────────────────────────────────────────────────────
-class NotificationOut(BaseModel):
+class NotificationOut(ORMModel):
     id: str
     kind: str
     title: str

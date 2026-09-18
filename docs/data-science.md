@@ -85,8 +85,12 @@ shorteners).
 **Classifier**: Multinomial Naive Bayes (Laplace α=0.1), pure Python,
 trained on ~90 **synthetic, versioned, explicitly-labeled** messages in
 `ml/risk/classifier.py`. Held-out metrics (fixed 80/20 split, seed 42) are
-computed at runtime via `ScamClassifier.holdout_metrics()` — never
-hardcoded in UI copy.
+computed at runtime, never hardcoded, via `ScamClassifier.holdout_metrics()`
+— today this is exercised by
+`test_risk_classifier_holdout_metrics` as a build-time quality gate, not
+yet surfaced through an API endpoint or the Risk Center UI. If that
+changes, the number must ship with its "synthetic ~90-message corpus"
+caveat (`note` field on the return value) rather than a bare percentage.
 
 **Limitations**: synthetic training data, narrow phrase coverage, English-
 centric; designed as a first-pass triage layer, not a detection guarantee.

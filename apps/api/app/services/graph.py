@@ -43,12 +43,20 @@ def upsert_entity(db: Session, user_id: str, kind: str, name: str,
         # silent duplicate row; a savepoint scopes that failure to just
         # this insert so the caller's outer transaction survives, and we
         # re-select to pick up the winner's row.
-        row = KnowledgeEntity(user_id=user_id, kind=kind, name=name,
-                              attrs_json=json.dumps(attrs or {}, default=str),
-                              ref_id=ref_id)
-        db.add(row)
         try:
+            # add() must happen *inside* the SAVEPOINT: only then does a
+            # rollback-on-exception also expunge the pending object from
+            # the session, leaving it usable for the caller's subsequent
+            # commit. add()-then-begin_nested() looks equivalent but isn't
+            # — the object stays pending against the outer transaction and
+            # the whole session (not just this insert) ends up needing an
+            # explicit rollback, which crashed the ingestion job's own
+            # later commit with PendingRollbackError.
             with db.begin_nested():
+                row = KnowledgeEntity(user_id=user_id, kind=kind, name=name,
+                                      attrs_json=json.dumps(attrs or {}, default=str),
+                                      ref_id=ref_id)
+                db.add(row)
                 db.flush()
         except IntegrityError:
             row = _find_entity(db, user_id, kind, name)

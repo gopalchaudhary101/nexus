@@ -35,7 +35,13 @@ def make_pdf(path: Path, title: str, lines: list[str]) -> None:
     from reportlab.lib.units import cm
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
-    doc = SimpleDocTemplate(str(path), pagesize=A4,
+    # invariant=1: reportlab otherwise stamps /CreationDate, /ModDate and
+    # /ID with the real wall-clock time and a random-looking id, so
+    # regenerating this committed demo dataset produced a byte-different
+    # file on every run even though every visible date/amount is already
+    # anchored to the fixed TODAY/seeded RNG below. invariant mode pins
+    # those to fixed values, making the output bit-for-bit reproducible.
+    doc = SimpleDocTemplate(str(path), pagesize=A4, invariant=1,
                             leftMargin=2 * cm, rightMargin=2 * cm,
                             topMargin=2 * cm, bottomMargin=2 * cm)
     styles = getSampleStyleSheet()

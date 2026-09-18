@@ -144,15 +144,17 @@ def import_transactions(db, user_id: str, rows: list[dict], source: str,
                                    Merchant.normalized == r["merchant_key"])
         ).scalars().first()
         if m is None:
-            m = Merchant(user_id=user_id, name=r["description"],
-                         normalized=r["merchant_key"])
-            db.add(m)
             # A second CSV/document import for the same user can be running
             # concurrently in another worker thread and race to create the
             # same merchant; the unique constraint + savepoint turns that
             # into a clean re-lookup instead of a duplicate row or crash.
+            # add() must happen *inside* begin_nested() — see the comment
+            # in graph.upsert_entity for why that ordering matters.
             try:
                 with db.begin_nested():
+                    m = Merchant(user_id=user_id, name=r["description"],
+                                 normalized=r["merchant_key"])
+                    db.add(m)
                     db.flush()
             except IntegrityError:
                 m = db.execute(

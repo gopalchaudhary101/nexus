@@ -139,3 +139,28 @@ def test_prompt_injection_in_document_is_data(client, user):
     assert "system prompt" not in body["answer"].lower() or body["grounded"] is False
 
 
+def test_notifications_list_and_mark_read(client, user):
+    # Document ingestion notifies on completion — this exercises the
+    # endpoint with a real, non-empty row rather than just an empty list.
+    doc = upload(client, user["token"], "notify_me.txt", "A short note for notification coverage 999.")
+    wait_ready(client, user["token"], doc["id"])
+
+    r = client.get("/api/v1/notifications", headers=auth(user["token"]))
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) > 0
+    notif = items[0]
+    assert {"id", "kind", "title", "body", "severity", "read", "created_at"} <= notif.keys()
+
+    unread_id = next(n["id"] for n in items if not n["read"])
+    r = client.post(f"/api/v1/notifications/{unread_id}/read", headers=auth(user["token"]))
+    assert r.status_code == 204
+    r = client.get("/api/v1/notifications", headers=auth(user["token"]))
+    assert next(n for n in r.json() if n["id"] == unread_id)["read"] is True
+
+    r = client.post("/api/v1/notifications/read-all", headers=auth(user["token"]))
+    assert r.status_code == 204
+    r = client.get("/api/v1/notifications", headers=auth(user["token"]))
+    assert all(n["read"] for n in r.json())
+
+

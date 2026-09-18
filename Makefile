@@ -9,7 +9,7 @@ demo: demo-data seed   ## Generate synthetic demo data + seed demo user
 demo-data:          ## Generate the synthetic demo dataset (no real personal data)
 	python3 scripts/generate_demo_data.py
 
-seed:               ## Create demo user + ingest demo data (demo@nexus.local)
+seed:               ## Create demo user + ingest demo data (demo@nexus.dev)
 	python3 scripts/seed_demo.py
 
 test:               ## Run backend tests

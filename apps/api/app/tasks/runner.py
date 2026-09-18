@@ -24,6 +24,14 @@ class JobRunner:
         self._log: deque = deque(maxlen=200)
 
     def start(self) -> None:
+        # Must be safely restartable: get_runner() returns a process-wide
+        # singleton, and a second create_app() in the same process (every
+        # test module that builds its own TestClient does this) calls
+        # start() again after a prior stop(). Without clearing _stop here,
+        # the new threads would see it already set and exit immediately —
+        # jobs would queue forever and never run.
+        self._stop.clear()
+        self._threads = []
         for i in range(self._n):
             t = threading.Thread(target=self._work, name=f"nexus-job-{i}", daemon=True)
             t.start()

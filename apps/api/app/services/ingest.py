@@ -49,14 +49,16 @@ def _upsert_deadline(db, doc: Document, d: dict) -> None:
     # deadline from two different documents at once; the unique constraint
     # on Deadline turns the loser's insert into an IntegrityError inside a
     # savepoint rather than a duplicate row or a crash (see graph.upsert_entity).
-    db.add(Deadline(
-        user_id=doc.user_id, title=title, kind=d["kind"],
-        due_date=due, source_doc_id=doc.id, source_ref=d["source_ref"][:255],
-        amount=d.get("amount"), currency=d.get("currency", "INR"),
-        importance=d.get("importance", 2), notes=d.get("notes", ""),
-    ))
+    # add() must happen *inside* begin_nested() — see the comment in
+    # graph.upsert_entity for why that ordering matters.
     try:
         with db.begin_nested():
+            db.add(Deadline(
+                user_id=doc.user_id, title=title, kind=d["kind"],
+                due_date=due, source_doc_id=doc.id, source_ref=d["source_ref"][:255],
+                amount=d.get("amount"), currency=d.get("currency", "INR"),
+                importance=d.get("importance", 2), notes=d.get("notes", ""),
+            ))
             db.flush()
     except IntegrityError:
         pass  # another job just inserted the same deadline — nothing to do

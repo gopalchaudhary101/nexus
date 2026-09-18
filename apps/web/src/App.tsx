@@ -12,6 +12,8 @@ import DataLabPage from "./pages/DataLabPage";
 import RagEvalPage from "./pages/RagEvalPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import RiskCenterPage from "./pages/RiskCenterPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const token = getToken();
@@ -54,8 +56,9 @@ export default function App() {
         <Route path="rag-eval" element={<RagEvalPage />} />
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="risk" element={<RiskCenterPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

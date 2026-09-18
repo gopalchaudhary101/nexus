@@ -99,11 +99,17 @@ infrastructure/  docker (API/web images) + aws/terraform
 ## Verification (executed in this workspace)
 
 ```bash
-ruff check ml apps/api tests scripts      # All checks passed
+ruff check ml apps/api tests scripts            # All checks passed
 mypy ml apps/api/app --ignore-missing-imports   # Success: 0 issues, 77 files
-python3 -m pytest apps/api/tests tests       # 35 passed (API, DS, agents, e2e)
-cd apps/web && npm run build                 # strict tsc + vite build OK
+python3 -m pytest apps/api/tests tests          # 36 passed (API, DS, agents, e2e, concurrency)
+pip-audit -r apps/api/requirements.txt          # No known vulnerabilities
+cd apps/web && npm run typecheck && npm run build   # strict tsc + vite build OK
 ```
+
+See `docs/FINAL_AUDIT.md` for the full production-readiness review (what was
+verified, what was fixed, what remains a documented limitation) and
+`docs/REQUIREMENTS_TRACEABILITY.md` for a criterion-by-criterion map to code
+and tests.
 
 The e2e test performs the full loop: register → upload the whole demo set →
 wait for ingestion → grounded cited answer → subscription/price-increase

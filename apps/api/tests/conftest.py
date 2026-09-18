@@ -24,6 +24,18 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 @pytest.fixture(scope="session")
 def client():
+    # db/session.py caches the engine/session factory as a process-global
+    # singleton (correct for a single production process). If another test
+    # module built its own TestClient earlier in this same pytest process
+    # (e.g. tests/test_e2e.py), that singleton would still point at *its*
+    # temp database, and init_db() no-ops when an engine already exists —
+    # so without resetting here, this fixture would silently run against
+    # the wrong database instead of the one configured above.
+    import app.db.session as sess
+    if sess._engine is not None:
+        sess._engine.dispose()
+        sess._engine = None
+        sess._SessionLocal = None
     app = create_app()
     with TestClient(app) as c:
         yield c

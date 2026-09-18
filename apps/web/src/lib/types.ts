@@ -302,6 +302,16 @@ export interface KnowledgeGraph {
   edges: GraphEdge[];
 }
 
+export interface Notification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  severity: string;
+  read: boolean;
+  created_at: string;
+}
+
 export interface HealthInfo {
   status: string;
   service: string;
