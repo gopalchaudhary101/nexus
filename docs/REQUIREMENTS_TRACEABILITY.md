@@ -46,7 +46,7 @@ actually run in this audit (see `docs/REPOSITORY_AUDIT.md` and
 | 37 | Tests | `apps/api/tests/*.py`, `tests/test_e2e.py` | — | — | 36/36 passing after this audit's fixes (was 35, +1 new regression test) | VERIFIED |
 | 38 | Frontend build | `apps/web` | — | `npm run build` | executed in this workspace: succeeds | VERIFIED |
 | 39 | Typecheck | `tsconfig*.json` (strict) | — | `npm run typecheck` | executed in this workspace: 0 errors | VERIFIED |
-| 40 | Lint | `pyproject.toml` (`ruff`) | — | — | `ruff check .`: 0 issues (1 fixed in this audit); no frontend lint script configured (eslint not set up) | PARTIAL (backend clean; frontend has no lint script) |
+| 40 | Lint | `pyproject.toml` (`ruff`), `apps/web/eslint.config.js` (new) | — | — | `ruff check .`: 0 issues; `npm run lint` (ESLint, newly added — none existed before): 0 issues after fixing one real pre-existing finding (see REPOSITORY_AUDIT.md, "Frontend lint") | VERIFIED |
 | 41 | Docker where available | `infrastructure/docker/Dockerfile.{api,web}`, `docker-compose.yml` | — | — | Docker not available in this verification environment; reviewed statically only | NOT VERIFIED |
 | 42 | Cloud infrastructure definitions | `infrastructure/aws/terraform/main.tf` | — | — | Static review only (no hardcoded secrets found); not planned/applied | NOT VERIFIED (definitions exist; no deployment claimed) |
 | 43 | Documentation | `README.md`, `docs/*.md` | — | — | Cross-checked against code in this audit; updated where stale (security.md, README verification numbers) | VERIFIED |
@@ -63,6 +63,10 @@ actually run in this audit (see `docs/REPOSITORY_AUDIT.md` and
   them live in a browser end-to-end — which is also how the
   `NotificationOut` schema bug (a completely broken, zero-coverage
   endpoint) was caught. See `docs/REPOSITORY_AUDIT.md` for both.
+- **#40 Frontend lint** had no ESLint at all. Added a standard flat-config
+  setup and wired it into CI; it immediately found one real pre-existing
+  issue (an unnecessary `setState`-in-effect in `DocumentsPage.tsx`),
+  which was fixed and re-verified live in a browser.
 
 ## Remaining gaps (not fixed in this pass — reason given)
 
@@ -70,9 +74,6 @@ actually run in this audit (see `docs/REPOSITORY_AUDIT.md` and
   is unit-tested; the service that wires it to the live retriever/LLM
   (`evaluation_service.py`) is only exercised indirectly through the E2E
   test. A dedicated test would catch a regression here faster.
-- **#40 Frontend lint**: no ESLint config exists in `apps/web`; `tsc
-  --noEmit` catches type errors but not style/correctness lint rules a
-  linter would.
 - **#41/#42**: infrastructure-as-code exists and was read for obvious
   misconfiguration, but "the Terraform compiles and contains no
   hardcoded secrets" is not the same claim as "this runs in AWS" — the

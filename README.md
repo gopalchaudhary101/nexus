@@ -103,7 +103,7 @@ ruff check ml apps/api tests scripts            # All checks passed
 mypy ml apps/api/app --ignore-missing-imports   # Success: 0 issues, 77 files
 python3 -m pytest apps/api/tests tests          # 36 passed (API, DS, agents, e2e, concurrency)
 pip-audit -r apps/api/requirements.txt          # No known vulnerabilities
-cd apps/web && npm run typecheck && npm run build   # strict tsc + vite build OK
+cd apps/web && npm run lint && npm run typecheck && npm run build   # eslint + strict tsc + vite build OK
 ```
 
 See `docs/FINAL_AUDIT.md` for the full production-readiness review (what was

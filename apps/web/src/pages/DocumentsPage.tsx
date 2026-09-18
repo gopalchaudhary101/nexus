@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, uploadDocument } from "../lib/api";
 import type { Document, DocumentDetail } from "../lib/types";
@@ -30,13 +30,17 @@ export default function DocumentsPage() {
     refetchInterval: (q) =>
       q.state.data?.some((d) => d.status === "UPLOADED" || d.status === "PROCESSING" || d.status === "INDEXING") ? 2000 : false,
   });
+  // Auto-select the first document once the list loads, without an effect:
+  // derive the effective id at render time and only fall back to it when
+  // the user hasn't explicitly picked one yet.
+  const effectiveSelected = selected ?? docs.data?.[0]?.id ?? null;
   const detail = useQuery<DocumentDetail>(
-    { queryKey: ["document", selected], queryFn: () => api<DocumentDetail>(`/documents/${selected}`), enabled: !!selected },
+    {
+      queryKey: ["document", effectiveSelected],
+      queryFn: () => api<DocumentDetail>(`/documents/${effectiveSelected}`),
+      enabled: !!effectiveSelected,
+    },
   );
-
-  useEffect(() => {
-    if (!selected && docs.data && docs.data.length > 0) setSelected(docs.data[0].id);
-  }, [docs.data, selected]);
 
   const doUpload = async (file: File) => {
     setUploading(true);
@@ -112,7 +116,7 @@ export default function DocumentsPage() {
                     onClick={() => setSelected(d.id)}
                     onKeyDown={(e) => e.key === "Enter" && setSelected(d.id)}
                     className={`w-full cursor-pointer rounded-lg border p-3 text-left transition-colors ${
-                      selected === d.id ? "border-accent/40 bg-accent/5" : "border-line bg-raised/30 hover:border-line/80"
+                      effectiveSelected === d.id ? "border-accent/40 bg-accent/5" : "border-line bg-raised/30 hover:border-line/80"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">

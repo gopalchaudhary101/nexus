@@ -210,8 +210,10 @@ Success: no issues found in 77 source files
 $ pip-audit -r apps/api/requirements.txt
 No known vulnerabilities found
 
-$ cd apps/web && npm run typecheck && npm run build
-(both succeed; tsc -b --noEmit clean, vite build produces dist/)
+$ cd apps/web && npm run lint && npm run typecheck && npm run build
+(all three succeed; ESLint added in this audit — was previously
+unconfigured — found and fixed one real pre-existing issue in
+DocumentsPage.tsx before reaching a clean pass)
 
 $ npm audit
 4 vulnerabilities (3 moderate, 1 high) — documented in docs/security.md,
@@ -220,8 +222,8 @@ react-router-dom 6→7)
 ```
 
 No frontend unit-test script is configured in `apps/web/package.json`
-(no `npm test`) — stated honestly; typecheck + build are what actually
-run today.
+(no `npm test`) — stated honestly; lint + typecheck + build are what
+actually run today.
 
 ## Performance
 
