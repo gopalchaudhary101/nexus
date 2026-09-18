@@ -17,7 +17,7 @@ relationships, memory), a framework-free ML layer (`ml/`: recurring-
 payment detection, anomaly detection, forecasting, a scam-risk NB
 classifier + heuristic rules, document extraction, a local hashing-trick
 embedder, RAG evaluation), a React 18 + TypeScript (strict) + TanStack
-Query + Recharts frontend (`apps/web`, 10 pages), and infrastructure
+Query + Recharts frontend (`apps/web`, 12 pages), and infrastructure
 definitions (Docker images, docker-compose, AWS Terraform). Local
 default: SQLite + in-process job runner + mock LLM. Production path:
 Postgres+pgvector, OpenAI/Anthropic/Gemini (credential-gated), AWS.
@@ -39,8 +39,9 @@ payment/anomaly/forecast/risk data science with genuine (not fabricated)
 statistics, the agent planner/executor/tool registry with a server-
 enforced SAFE/SENSITIVE/CONSEQUENTIAL approval gate that a rejection
 actually blocks, a real persisted agent trace, an append-only audit
-trail, and 10 frontend pages that all fetch live data with real loading/
-error/empty states.
+trail, and 12 frontend pages (10 original + Privacy and 404, added in
+this audit) that all fetch live data with real loading/error/empty
+states.
 
 ## Bugs found and fixed in this audit
 
@@ -175,8 +176,10 @@ for the full picture. Summary of this pass's findings: one real
 enforcement gap closed (production secret-key guard), one hardening item
 closed (CORS configurability), one defense-in-depth gap closed (anomaly
 endpoint IDOR filter), zero Python dependency vulnerabilities
-(`pip-audit`), four frontend dependency advisories documented and
-deferred (`npm audit`, dev-tooling/breaking-upgrade-required). No
+(`pip-audit`), seven frontend dependency advisories documented with
+their exact preconditions (`npm audit` — dev-tooling/breaking-upgrade-
+required, or, for the one critical finding, a CLI flag this project
+never passes). No
 cross-user data access vulnerability was found in the DB/API/RAG/agent
 layers reviewed. NEXUS is not claimed to be "100% secure" — residual
 risks are listed in `docs/threat-model.md`.
@@ -259,9 +262,9 @@ unverified at runtime," stated plainly rather than implied otherwise.
   performance.
 - The local hashing-trick embedder is lexical, not semantic — documented
   as such; a real embedding model is a credential-gated swap-in.
-- Notifications and a dedicated Privacy/data-deletion page were not
-  located among the audited frontend pages, though their backends are
-  real and correct.
+- Notifications and Privacy/data-deletion had no frontend when this audit
+  started; both were built and verified live in a browser during this
+  pass (see "Bugs found and fixed" #15 and "Verified live in a browser").
 - No load testing, no penetration testing, no deployed-infrastructure
   verification. This audit reviewed source and ran the available local
   test/build/lint/audit tooling — nothing more is claimed.
