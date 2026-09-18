@@ -83,8 +83,9 @@ class GeminiProvider:
     def chat(self, system: str, user: str, json_mode: bool = False) -> str:
         instruction = system + ("\nRespond with valid JSON only." if json_mode else "")
         data = _post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
-            {},  # key goes in query string for this API
+            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+            f"?key={self.api_key}",
+            {},  # key goes in the query string for this API, not a header
             {
                 "systemInstruction": {"parts": [{"text": instruction}]},
                 "contents": [{"role": "user", "parts": [{"text": user}]}],

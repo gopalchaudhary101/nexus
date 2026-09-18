@@ -12,6 +12,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from ml.extraction.classify import classify_document
 from ml.extraction.entities import extract_entities
@@ -27,23 +28,38 @@ from .notify import notify
 from .transactions import import_transactions, parse_transactions_csv
 
 
+def _find_deadline(db, user_id: str, title: str, due):
+    return db.execute(select(Deadline).where(
+        Deadline.user_id == user_id,
+        Deadline.title == title,
+        Deadline.due_date == due,
+    )).scalars().first()
+
+
 def _upsert_deadline(db, doc: Document, d: dict) -> None:
     due = d["due_date"]
     today = date.today()
     if due < today - timedelta(days=30) or due > today + timedelta(days=3650):
         return  # implausible/stale — don't pollute the deadline list
-    existing = db.execute(select(Deadline).where(
-        Deadline.user_id == doc.user_id,
-        Deadline.title == d["title"],
-        Deadline.due_date == due,
-    )).scalar_one_or_none()
-    if existing is None:
-        db.add(Deadline(
-            user_id=doc.user_id, title=d["title"][:255], kind=d["kind"],
-            due_date=due, source_doc_id=doc.id, source_ref=d["source_ref"][:255],
-            amount=d.get("amount"), currency=d.get("currency", "INR"),
-            importance=d.get("importance", 2), notes=d.get("notes", ""),
-        ))
+    title = d["title"][:255]
+    existing = _find_deadline(db, doc.user_id, title, due)
+    if existing is not None:
+        return
+    # Two ingestion worker threads can derive the same (title, due_date)
+    # deadline from two different documents at once; the unique constraint
+    # on Deadline turns the loser's insert into an IntegrityError inside a
+    # savepoint rather than a duplicate row or a crash (see graph.upsert_entity).
+    db.add(Deadline(
+        user_id=doc.user_id, title=title, kind=d["kind"],
+        due_date=due, source_doc_id=doc.id, source_ref=d["source_ref"][:255],
+        amount=d.get("amount"), currency=d.get("currency", "INR"),
+        importance=d.get("importance", 2), notes=d.get("notes", ""),
+    ))
+    try:
+        with db.begin_nested():
+            db.flush()
+    except IntegrityError:
+        pass  # another job just inserted the same deadline — nothing to do
 
 
 def _upsert_subscription(db, doc: Document, s: dict) -> None:

@@ -15,6 +15,12 @@ class Settings(BaseSettings):
 
     host: str = "0.0.0.0"
     port: int = 8000
+    environment: str = "development"         # development | production
+    # Comma-separated browser origins allowed to call the API. The "*"
+    # default is fine for local dev (no cookies are used, so wildcard CORS
+    # carries no credential-leak risk here) but should be pinned to the
+    # real frontend origin(s) in production — see docs/security.md.
+    cors_origins: str = "*"
 
     database_url: str | None = None          # None -> local SQLite
     secret_key: str = "dev-secret-change-me"
@@ -46,6 +52,22 @@ class Settings(BaseSettings):
     @property
     def using_postgres(self) -> bool:
         return self.db_url.startswith("postgresql")
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def assert_production_safe(self) -> None:
+        """Fail closed instead of booting a production deployment with a
+        forgeable JWT signing key. Without this, `secret_key`'s insecure
+        default (checked into .env.example for local dev) would let anyone
+        mint a valid access token for any user id."""
+        if self.environment == "production" and self.secret_key == "dev-secret-change-me":
+            raise RuntimeError(
+                "NEXUS_SECRET_KEY is still the insecure default while "
+                "NEXUS_ENVIRONMENT=production. Set a real secret "
+                "(python -c \"import secrets; print(secrets.token_urlsafe(48))\")."
+            )
 
 
 @lru_cache

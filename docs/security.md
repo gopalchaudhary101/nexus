@@ -6,7 +6,12 @@
   salt, constant-time compare. (Argon2id recommended at >1k users; the
   hashing interface is isolated in `core/security.py` for a one-file swap.)
 - **Tokens**: HS256 JWT, 8h TTL, `jti` per token. `NEXUS_SECRET_KEY`
-  must be set in production (Secrets Manager in AWS).
+  must be set in production (Secrets Manager in AWS). **Enforced, not just
+  documented**: `Settings.assert_production_safe()` (`core/config.py`),
+  called from `create_app()`, refuses to start when
+  `NEXUS_ENVIRONMENT=production` and the secret is still the insecure
+  `.env.example` default — a prior gap where this was advisory-only would
+  have let anyone forge a valid token for any user id if deployed unchanged.
 - **Rate limiting**: fixed-window per-IP limiter on register/login
   (default 30/min; process-local — Redis behind the same interface in
   multi-instance deployments).
@@ -69,13 +74,51 @@
 
 ## CORS / transport
 
-- Dev CORS is open for local tooling; **production must pin the browser
-  origin** and terminate TLS at the ALB/CloudFront (see
-  `docs/deployment.md`).
+- Dev CORS (`NEXUS_CORS_ORIGINS=*`) is open for local tooling; **production
+  must set `NEXUS_CORS_ORIGINS`** to a comma-separated list of the real
+  frontend origin(s) (`main.py` reads `Settings.cors_origin_list`) and
+  terminate TLS at the ALB/CloudFront (see `docs/deployment.md`). No
+  cookies/credentials are sent (`allow_credentials=False`), so the wildcard
+  default carries no session-hijack risk in local dev — it is purely a
+  production-hardening step, not a currently-exploitable gap.
 - JWTs travel in `Authorization: Bearer` headers.
+
+## Data-integrity note (concurrency)
+
+- The ingestion worker pool (`NEXUS_WORKER_THREADS`, default 2) processes
+  multiple documents for the same user in parallel. The knowledge-graph,
+  deadline and merchant "get-or-create" helpers were a plain
+  check-then-insert with no DB constraint backing them, so two documents
+  ingested at the same instant could race to insert the same row (most
+  visibly the singleton per-user `USER` graph node), and a later lookup
+  would raise `MultipleResultsFound` and mark that document `FAILED`. Not a
+  cross-tenant leak (each race was scoped to a single user's own rows), but
+  a real reliability bug, reproduced via `tests/test_e2e.py` (~1 in 5-10
+  runs) and now via the deterministic
+  `apps/api/tests/test_concurrency.py`. **Fixed**: unique constraints on
+  `KnowledgeEntity(user_id, kind, name)`, `Deadline(user_id, title,
+  due_date)` and `Merchant(user_id, normalized)`, with the insert wrapped
+  in a `SAVEPOINT` that catches the loser's `IntegrityError` and re-selects
+  the winner's row instead of crashing the job.
 
 ## Dependency note
 
-- Production dependencies are pinned in `apps/api/requirements.txt`;
-  `pip-audit`/Dependabot-style scanning is part of the CI recommendation
-  (`.github/workflows/ci.yml` runs tests + lint + types).
+- Production Python dependencies are pinned in `apps/api/requirements.txt`;
+  `pip-audit -r apps/api/requirements.txt` was run during this review and
+  found **no known vulnerabilities**.
+- Frontend (`apps/web`): `npm audit` reports 4 findings (3 moderate, 1
+  high), all in dev/transitive tooling, not runtime app code:
+  - `esbuild <=0.24.2` (via `vite`) — dev-server request-forgery advisory;
+    affects `vite dev` only, not the production `dist/` build served by
+    nginx.
+  - `react-router` 6.0.0–7.17.0 (the app pins `^6.28.0`) — an open-redirect
+    advisory and an SSR-hydration advisory; NEXUS is a client-only SPA
+    (no server-side rendering), so the SSR advisory does not apply, and no
+    user-controlled redirect target is passed to `<Link>`/`useNavigate`
+    anywhere in `apps/web/src`.
+  - The fix for both requires a breaking major-version upgrade (`vite` 5→8,
+    `react-router-dom` 6→7). Deferred rather than forced blind, per the
+    "no blind rewrites" policy — flagged here as a known, accepted-risk
+    finding for a deliberate, tested upgrade rather than an undisclosed gap.
+- CI (`.github/workflows/ci.yml`) runs tests + ruff + mypy on every PR;
+  `pip-audit`/`npm audit` are recommended CI additions, not yet wired in.

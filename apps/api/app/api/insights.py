@@ -128,7 +128,15 @@ def anomalies(db: Session = Depends(get_db), user=Depends(get_current_user)):
     flagged = payload.get("flagged", [])
     out = []
     for f in flagged:
-        txn = db.get(Transaction, f.get("transaction_id", "")) if f.get("transaction_id") else None
+        # Defense in depth: this payload is generated exclusively by the
+        # user's own anomaly-detection job today, so transaction_id can't
+        # reference another tenant's row in practice — but scope the lookup
+        # by user_id anyway rather than trusting the stored id alone.
+        txn = None
+        if f.get("transaction_id"):
+            txn = db.execute(select(Transaction).where(
+                Transaction.id == f["transaction_id"], Transaction.user_id == user.id
+            )).scalars().first()
         out.append(AnomalyOut(
             transaction_id=f.get("transaction_id", ""),
             date=txn.date if txn else datetime(2000, 1, 1, tzinfo=UTC),

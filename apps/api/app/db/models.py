@@ -8,7 +8,18 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin, utcnow
@@ -79,7 +90,11 @@ class DocumentEntity(Base):
 
 class Merchant(Base):
     __tablename__ = "merchants"
-    __table_args__ = (Index("ix_merchants_user_norm", "user_id", "normalized"),)
+    # Unique, not just indexed: import_transactions() get-or-creates by
+    # (user_id, normalized) from concurrent ingestion jobs — the constraint
+    # turns a would-be duplicate insert into a clean IntegrityError the
+    # caller retries as a lookup, instead of a silently duplicated merchant.
+    __table_args__ = (UniqueConstraint("user_id", "normalized", name="uq_merchants_user_norm"),)
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(255))
@@ -131,7 +146,12 @@ class Subscription(Base):
 
 class Deadline(Base):
     __tablename__ = "deadlines"
-    __table_args__ = (Index("ix_deadlines_user_due", "user_id", "due_date"),)
+    # Unique on (user_id, title, due_date): _upsert_deadline() get-or-creates
+    # on this triple from concurrent ingestion jobs — see Merchant above.
+    __table_args__ = (
+        Index("ix_deadlines_user_due", "user_id", "due_date"),
+        UniqueConstraint("user_id", "title", "due_date", name="uq_deadlines_user_title_due"),
+    )
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String(255))
@@ -246,7 +266,13 @@ class ModelPrediction(Base):
 
 class KnowledgeEntity(Base):
     __tablename__ = "knowledge_entities"
-    __table_args__ = (Index("ix_ke_user_kind", "user_id", "kind"),)
+    # Unique on (user_id, kind, name): upsert_entity() get-or-creates on this
+    # triple, called concurrently by the ingestion worker pool (>=2 threads)
+    # processing different documents for the same user — see Merchant above.
+    __table_args__ = (
+        Index("ix_ke_user_kind", "user_id", "kind"),
+        UniqueConstraint("user_id", "kind", "name", name="uq_ke_user_kind_name"),
+    )
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     kind: Mapped[str] = mapped_column(String(32))                     # USER|DOCUMENT|MERCHANT|DEADLINE|...

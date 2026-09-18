@@ -1,7 +1,6 @@
 """NEXUS API — application entrypoint."""
 from __future__ import annotations
 
-import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -24,17 +23,18 @@ async def lifespan(_: FastAPI):
 
 
 def create_app() -> FastAPI:
+    get_settings().assert_production_safe()
     app = FastAPI(
         title="NEXUS API",
         description="Personal Life Intelligence & Action OS",
         version="0.1.0",
         lifespan=lifespan,
     )
-    # Dev-friendly CORS. Production deployments should pin the browser origin
-    # (documented in docs/security.md).
+    # Dev-friendly CORS ("*") by default. Production deployments should set
+    # NEXUS_CORS_ORIGINS to the real frontend origin(s) — see docs/security.md.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=get_settings().cors_origin_list,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],

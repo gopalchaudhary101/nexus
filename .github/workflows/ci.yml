@@ -23,6 +23,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r apps/api/requirements.txt
 
+      - name: pip-audit (dependency vulnerability scan)
+        run: |
+          pip install --quiet pip-audit
+          pip-audit -r apps/api/requirements.txt
+
       - name: Ruff
         run: ruff check ml apps/api tests scripts
 
@@ -54,3 +59,11 @@ jobs:
       - name: Type-check + production build
         working-directory: apps/web
         run: npm run build
+
+      - name: npm audit (dependency vulnerability scan, non-blocking)
+        working-directory: apps/web
+        # Known findings (esbuild dev-server, react-router) are tracked in
+        # docs/security.md pending a deliberate, tested vite/react-router
+        # major-version upgrade. Informational until that upgrade lands.
+        continue-on-error: true
+        run: npm audit --audit-level=high

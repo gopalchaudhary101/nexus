@@ -14,27 +14,45 @@ from __future__ import annotations
 import json
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..db.models import KnowledgeEntity, KnowledgeRelationship
 
 
-def upsert_entity(db: Session, user_id: str, kind: str, name: str,
-                  attrs: dict | None = None, ref_id: str | None = None) -> str:
-    name = name[:255]
-    row = db.execute(
+def _find_entity(db: Session, user_id: str, kind: str, name: str) -> KnowledgeEntity | None:
+    return db.execute(
         select(KnowledgeEntity).where(
             KnowledgeEntity.user_id == user_id,
             KnowledgeEntity.kind == kind,
             KnowledgeEntity.name == name,
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
+
+
+def upsert_entity(db: Session, user_id: str, kind: str, name: str,
+                  attrs: dict | None = None, ref_id: str | None = None) -> str:
+    name = name[:255]
+    row = _find_entity(db, user_id, kind, name)
     if row is None:
+        # The ingestion worker pool runs multiple documents for the same
+        # user concurrently, so two jobs can both miss the SELECT above and
+        # race to insert the same (user_id, kind, name) node (e.g. the
+        # singleton USER node). The unique constraint on KnowledgeEntity
+        # turns the loser's insert into an IntegrityError instead of a
+        # silent duplicate row; a savepoint scopes that failure to just
+        # this insert so the caller's outer transaction survives, and we
+        # re-select to pick up the winner's row.
         row = KnowledgeEntity(user_id=user_id, kind=kind, name=name,
                               attrs_json=json.dumps(attrs or {}, default=str),
                               ref_id=ref_id)
         db.add(row)
-        db.flush()
+        try:
+            with db.begin_nested():
+                db.flush()
+        except IntegrityError:
+            row = _find_entity(db, user_id, kind, name)
+            assert row is not None, "insert failed on unique conflict but no row found"
     else:
         if attrs:
             row.attrs_json = json.dumps(attrs, default=str)

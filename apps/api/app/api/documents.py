@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -45,9 +45,12 @@ def upload(file: UploadFile = File(...), db: Session = Depends(get_db),
 
 
 @router.get("", response_model=list[DocumentOut])
-def list_documents(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def list_documents(limit: int = Query(default=100, ge=1, le=200),
+                   offset: int = Query(default=0, ge=0),
+                   db: Session = Depends(get_db), user=Depends(get_current_user)):
     rows = db.execute(select(Document).where(Document.user_id == user.id)
-                      .order_by(Document.created_at.desc())).scalars().all()
+                      .order_by(Document.created_at.desc())
+                      .limit(limit).offset(offset)).scalars().all()
     return [DocumentOut.model_validate(r) for r in rows]
 
 

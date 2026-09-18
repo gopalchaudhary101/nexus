@@ -88,18 +88,18 @@ def _resolve_merchant(text: str) -> str:
     """Best-effort merchant name: contextual phrase first, then an all-caps
     brand token (receipts print names in caps), then a Title-case fallback.
     Never returns empty; generic words (RECEIPT, NO, PLAN…) are excluded."""
-    m = _first(text, r"(?:billed by|provider|merchant|company|issued by)\s*:?\s+([A-Z][A-Za-z&\.\- ]{2,40})")
-    if m:
-        return m
-    for m in re.finditer(r"\b([A-Z][A-Z0-9]{1,}(?: [A-Z][A-Z0-9]{1,}){0,2})\b", text):
-        words = m.group(1).split()
+    contextual = _first(text, r"(?:billed by|provider|merchant|company|issued by)\s*:?\s+([A-Z][A-Za-z&\.\- ]{2,40})")
+    if contextual:
+        return contextual
+    for caps_match in re.finditer(r"\b([A-Z][A-Z0-9]{1,}(?: [A-Z][A-Z0-9]{1,}){0,2})\b", text):
+        words = caps_match.group(1).split()
         if all(w in _CAPS_GENERIC for w in words):
             continue
         if any(w.isdigit() for w in words):
             continue
-        return m.group(1).title()
-    m = re.search(r"\b([A-Z][a-z]+(?: [A-Z][a-z]+){0,3})\b", text)
-    return m.group(1) if m else "Unknown merchant"
+        return caps_match.group(1).title()
+    title_match = re.search(r"\b([A-Z][a-z]+(?: [A-Z][a-z]+){0,3})\b", text)
+    return title_match.group(1) if title_match else "Unknown merchant"
 
 
 def derive_deadlines(doc_type: str, text: str, pages: list[str],

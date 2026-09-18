@@ -20,7 +20,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
   const { data: health } = useQuery<HealthInfo>({
     queryKey: ["health"],
@@ -36,12 +35,6 @@ export default function Layout() {
         navigate("/login");
       });
   }, [navigate]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4200);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const logout = () => {
     clearToken();
@@ -118,11 +111,6 @@ export default function Layout() {
         <div key={location.pathname} className="mx-auto max-w-6xl px-8 py-8">
           <Outlet />
         </div>
-        {toast && (
-          <div className="fixed bottom-6 right-6 rounded-lg border border-line bg-raised px-4 py-3 text-sm text-ink shadow-panel">
-            {toast}
-          </div>
-        )}
       </main>
     </div>
   );

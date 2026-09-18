@@ -5,6 +5,7 @@ import json
 from io import StringIO
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from ml.recurring.detector import normalize_merchant
 
@@ -141,12 +142,24 @@ def import_transactions(db, user_id: str, rows: list[dict], source: str,
         m = db.execute(
             select(Merchant).where(Merchant.user_id == user_id,
                                    Merchant.normalized == r["merchant_key"])
-        ).scalar_one_or_none()
+        ).scalars().first()
         if m is None:
             m = Merchant(user_id=user_id, name=r["description"],
                          normalized=r["merchant_key"])
             db.add(m)
-            db.flush()
+            # A second CSV/document import for the same user can be running
+            # concurrently in another worker thread and race to create the
+            # same merchant; the unique constraint + savepoint turns that
+            # into a clean re-lookup instead of a duplicate row or crash.
+            try:
+                with db.begin_nested():
+                    db.flush()
+            except IntegrityError:
+                m = db.execute(
+                    select(Merchant).where(Merchant.user_id == user_id,
+                                           Merchant.normalized == r["merchant_key"])
+                ).scalars().first()
+                assert m is not None, "insert failed on unique conflict but no row found"
         db.add(Transaction(
             user_id=user_id, merchant_id=m.id, date=r["date"],
             description=r["description"], amount=r["amount"],
