@@ -120,5 +120,17 @@
     `react-router-dom` 6→7). Deferred rather than forced blind, per the
     "no blind rewrites" policy — flagged here as a known, accepted-risk
     finding for a deliberate, tested upgrade rather than an undisclosed gap.
+  - Adding `vitest` (frontend unit tests, previously absent) pulled in two
+    more dev-only advisories on the same `vite`/`esbuild` dependency chain,
+    plus one rated **critical**: [GHSA-5xrq-8626-4rwp](https://github.com/advisories/GHSA-5xrq-8626-4rwp)
+    — "when the Vitest UI server is listening, an arbitrary file can be
+    read and executed." The precondition is running `vitest --ui`; this
+    project's `test` script is `vitest run` (single-shot, no server), and
+    no script, doc or CI step here ever passes `--ui`. Verified present in
+    every current major version of `vitest` (1.x through 5.x) as of this
+    review — not something an older pin avoids. Same risk shape and same
+    disposition as the `esbuild` dev-server finding above: real advisory,
+    inapplicable to how this project actually invokes the tool, disclosed
+    rather than silently accepted.
 - CI (`.github/workflows/ci.yml`) runs tests + ruff + mypy on every PR;
   `pip-audit`/`npm audit` are recommended CI additions, not yet wired in.

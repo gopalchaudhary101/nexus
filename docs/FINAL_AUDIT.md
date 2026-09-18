@@ -145,9 +145,12 @@ caught — it had no test coverage and would not have been found by
   fabricated number is being shown anywhere; the metric is simply not
   surfaced yet. `docs/data-science.md` corrected to say this precisely.
 - **Frontend dependency vulnerabilities** (`npm audit`: esbuild/vite dev-
-  server advisory, react-router open-redirect/SSR advisories) — real,
-  documented, deliberately deferred pending a breaking major-version
-  upgrade rather than forced blind.
+  server advisories, react-router open-redirect/SSR advisories, and a
+  critical `vitest --ui`-only advisory introduced by adding the test
+  framework in this audit) — all real, all documented with their exact
+  precondition in `docs/security.md`, deliberately deferred (the
+  breaking-upgrade ones) or inapplicable-as-used (the `vitest --ui` one)
+  rather than silently accepted.
 
 ## Simulated features (intentional, clearly labelled)
 
@@ -184,8 +187,8 @@ All commands below were executed in this workspace during this audit.
 
 ```
 $ ./.venv/Scripts/python.exe -m pytest -q
-....................................                                     [100%]
-36 passed
+.....................................                                    [100%]
+37 passed
 ```
 
 Stress verification (this audit does not claim "works" without repeated
@@ -195,7 +198,7 @@ runs for anything that was ever observed flaky):
   session bugs (`pytest tests/test_e2e.py apps/api/tests/test_concurrency.py`)
   was run repeatedly after each fix; the final state passed every run
   observed in this session.
-- The full suite (`pytest -q`, 36 tests) was run repeatedly with real
+- The full suite (`pytest -q`, 37 tests) was run repeatedly with real
   exit-code checking (not string-matching, which was tried first and
   found to be an unreliable check) after the final fix, with zero
   failures across every batch run in this session.
@@ -210,20 +213,20 @@ Success: no issues found in 77 source files
 $ pip-audit -r apps/api/requirements.txt
 No known vulnerabilities found
 
-$ cd apps/web && npm run lint && npm run typecheck && npm run build
-(all three succeed; ESLint added in this audit — was previously
-unconfigured — found and fixed one real pre-existing issue in
-DocumentsPage.tsx before reaching a clean pass)
+$ cd apps/web && npm run lint && npm test && npm run typecheck && npm run build
+(all four succeed — ESLint and Vitest were both added in this audit;
+neither existed before. Lint found and fixed one real pre-existing
+issue in DocumentsPage.tsx; writing the Privacy-page test surfaced a
+real label/input accessibility gap, fixed immediately. 13/13 tests pass.)
 
 $ npm audit
-4 vulnerabilities (3 moderate, 1 high) — documented in docs/security.md,
-deferred pending a deliberate major-version upgrade (vite 5→8,
-react-router-dom 6→7)
+7 vulnerabilities (5 moderate, 1 high, 1 critical) — documented in
+docs/security.md with each finding's precondition; the critical one
+(vitest, GHSA-5xrq-8626-4rwp) only applies to `vitest --ui`, which this
+project's `npm test` (`vitest run`) never invokes. Deferred pending a
+deliberate major-version upgrade (vite 5→8, react-router-dom 6→7) for
+the pre-existing findings.
 ```
-
-No frontend unit-test script is configured in `apps/web/package.json`
-(no `npm test`) — stated honestly; lint + typecheck + build are what
-actually run today.
 
 ## Performance
 

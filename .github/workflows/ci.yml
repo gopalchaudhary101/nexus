@@ -60,6 +60,10 @@ jobs:
         working-directory: apps/web
         run: npm run lint
 
+      - name: Unit tests
+        working-directory: apps/web
+        run: npm test
+
       - name: Type-check + production build
         working-directory: apps/web
         run: npm run build

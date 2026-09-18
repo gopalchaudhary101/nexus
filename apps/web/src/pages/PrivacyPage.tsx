@@ -106,8 +106,11 @@ export default function PrivacyPage() {
         </p>
         <form onSubmit={submitDelete} className="mt-4 max-w-sm space-y-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-ink-dim">Your password</label>
+            <label htmlFor="delete-account-password" className="mb-1.5 block text-xs font-medium text-ink-dim">
+              Your password
+            </label>
             <input
+              id="delete-account-password"
               className="input"
               type="password"
               value={password}
@@ -116,10 +119,11 @@ export default function PrivacyPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-ink-dim">
+            <label htmlFor="delete-account-confirm" className="mb-1.5 block text-xs font-medium text-ink-dim">
               Type DELETE to confirm
             </label>
             <input
+              id="delete-account-confirm"
               className="input"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}

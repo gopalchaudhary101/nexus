@@ -93,7 +93,8 @@ tests/           end-to-end scenario test
 docs/            architecture, data-science, rag, agents, security,
                  threat-model, deployment
 infrastructure/  docker (API/web images) + aws/terraform
-.github/         CI: ruff + mypy + pytest + frontend type-check/build
+.github/         CI: ruff + mypy + pip-audit + pytest, eslint + vitest +
+                 type-check/build + npm audit
 ```
 
 ## Verification (executed in this workspace)
