@@ -1,0 +1,30 @@
+[project]
+name = "nexus-monorepo"
+version = "0.1.0"
+description = "NEXUS — Personal Life Intelligence & Action OS (monorepo tooling config)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests", "tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["node_modules", "dist", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# E501: line length handled by formatter preference
+# B008: FastAPI dependency injection (Depends/Query in defaults is the documented pattern)
+# E402: test/conftest env setup must run before app imports
+ignore = ["E501", "B008", "E402"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = false
+exclude = ["node_modules/", "dist/", "data/", ".venv/"]

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r apps/api/requirements.txt
+
+      - name: Ruff
+        run: ruff check ml apps/api tests scripts
+
+      - name: mypy
+        run: mypy ml apps/api/app --ignore-missing-imports
+
+      - name: Generate demo dataset (test fixture)
+        run: python3 scripts/generate_demo_data.py
+
+      - name: pytest (API + data science + e2e)
+        run: python3 -m pytest apps/api/tests tests -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Type-check + production build
+        working-directory: apps/web
+        run: npm run build

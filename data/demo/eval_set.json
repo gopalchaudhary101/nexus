@@ -1,0 +1,113 @@
+{
+  "cases": [
+    {
+      "id": "q01",
+      "question": "When does my insurance policy expire?",
+      "expected_doc": "insurance_policy",
+      "expected_keywords": [
+        "14 March 2027"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q02",
+      "question": "What is my insurance renewal premium and when is it due?",
+      "expected_doc": "insurance_policy",
+      "expected_keywords": [
+        "18,500",
+        "25 September 2026"
+      ],
+      "category": "amounts+dates"
+    },
+    {
+      "id": "q03",
+      "question": "When is the electricity bill due?",
+      "expected_doc": "electricity_bill",
+      "expected_keywords": [
+        "27 September 2026"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q04",
+      "question": "How much is the electricity bill?",
+      "expected_doc": "electricity_bill",
+      "expected_keywords": [
+        "2,340"
+      ],
+      "category": "amounts"
+    },
+    {
+      "id": "q05",
+      "question": "When does my rental agreement end?",
+      "expected_doc": "rental_agreement",
+      "expected_keywords": [
+        "31 December 2026"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q06",
+      "question": "What is the monthly rent for the apartment?",
+      "expected_doc": "rental_agreement",
+      "expected_keywords": [
+        "22,000"
+      ],
+      "category": "amounts"
+    },
+    {
+      "id": "q07",
+      "question": "What is the cancellation notice period for the lease?",
+      "expected_doc": "rental_agreement",
+      "expected_keywords": [
+        "60 days"
+      ],
+      "category": "policy"
+    },
+    {
+      "id": "q08",
+      "question": "What is the next billing date for Example Streaming?",
+      "expected_doc": "streaming_invoice",
+      "expected_keywords": [
+        "2 October 2026"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q09",
+      "question": "How much is the streaming subscription per month?",
+      "expected_doc": "streaming_invoice",
+      "expected_keywords": [
+        "799"
+      ],
+      "category": "amounts"
+    },
+    {
+      "id": "q10",
+      "question": "When does the device warranty end?",
+      "expected_doc": "warranty",
+      "expected_keywords": [
+        "12 January 2027"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q11",
+      "question": "What is the response deadline for the job offer?",
+      "expected_doc": "job_offer",
+      "expected_keywords": [
+        "28 September 2026"
+      ],
+      "category": "dates"
+    },
+    {
+      "id": "q12",
+      "question": "When is the Goa trip flight?",
+      "expected_doc": "travel_booking",
+      "expected_keywords": [
+        "15 November 2026"
+      ],
+      "category": "dates"
+    }
+  ]
+}

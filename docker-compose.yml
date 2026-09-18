@@ -1,0 +1,47 @@
+# NEXUS local stack.
+# Local development does NOT require this: the API defaults to SQLite + in-process
+# job runner + mock LLM. This compose file is the Postgres+pgvector variant.
+name: nexus
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus
+      POSTGRES_DB: nexus
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api
+    environment:
+      NEXUS_DATABASE_URL: postgresql+psycopg://nexus:nexus@postgres:5432/nexus
+      NEXUS_SECRET_KEY: ${NEXUS_SECRET_KEY:-change-me-in-production}
+      NEXUS_LLM_PROVIDER: ${NEXUS_LLM_PROVIDER:-mock}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.web
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

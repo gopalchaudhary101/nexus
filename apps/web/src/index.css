@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-base text-ink antialiased;
+  background-image:
+    radial-gradient(1200px 500px at 80% -10%, rgba(139, 92, 246, 0.07), transparent 60%),
+    radial-gradient(900px 420px at 10% -10%, rgba(34, 211, 238, 0.06), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* subtle scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #24344d transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #24344d;
+  border-radius: 8px;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-line bg-surface shadow-panel;
+  }
+  .panel-title {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-lg border border-line bg-raised px-3.5 py-2 text-sm
+      font-medium text-ink transition-colors hover:border-accent/40 hover:bg-raised/70
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-accent/40 bg-accent/10 text-accent hover:bg-accent/20;
+  }
+  .btn-danger {
+    @apply border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-raised/60 px-3 py-2 text-sm text-ink
+      placeholder:text-ink-faint focus:border-accent/50 focus:outline-none;
+  }
+}

@@ -1,0 +1,9 @@
+EXAMPLE STREAMING — Subscription Invoice
+
+Invoice No: SI-8812
+Merchant: Example Streaming
+Plan: Premium Monthly
+Amount: 799 INR per month
+The next billing date is 2 October 2026.
+Auto-renew is ON. To cancel, request by the 25th of the previous month.
+Cancellation before the deadline avoids the next cycle charge.
