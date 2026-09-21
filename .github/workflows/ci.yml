@@ -48,7 +48,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # jsdom 30 (pulled in by vitest, added for frontend unit tests)
+          # requires Node ^22.22.2 || ^24.15.0 || >=26.0.0 and hard-crashes
+          # on Node 20 ("webidl.util.markAsUncloneable is not a function").
+          # Match this to the local dev environment (Node 24) so CI can't
+          # silently drift from what was actually verified before pushing.
+          node-version: "24"
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 

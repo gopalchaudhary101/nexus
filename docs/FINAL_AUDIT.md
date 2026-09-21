@@ -116,6 +116,19 @@ states.
     silently redirected home). Built all three against the existing
     design system and verified live in a browser — see "Verified live in
     a browser" below.
+16. **CI's own first real run failed** — the frontend job pinned
+    `node-version: "20"`, but `jsdom@30` (pulled in by `vitest`, added in
+    this audit) requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` and
+    hard-crashes on Node 20 (`TypeError: webidl.util.markAsUncloneable is
+    not a function`). The incompatibility was visible in `npm install`'s
+    `EBADENGINE` warnings at the time but not acted on, because the local
+    dev environment (Node 24) masked it — every prior "the suite passes"
+    claim in this audit was true locally and had never actually been run
+    through GitHub Actions until the first real push. Caught by checking
+    the actual CI run (`gh run view`) after pushing, not assumed from a
+    green local terminal. Bumped CI to Node 24 to match the local
+    environment exactly; the backend job passed on its first real run
+    with zero changes needed.
 
 ## Verified live in a browser
 
@@ -229,6 +242,25 @@ docs/security.md with each finding's precondition; the critical one
 project's `npm test` (`vitest run`) never invokes. Deferred pending a
 deliberate major-version upgrade (vite 5→8, react-router-dom 6→7) for
 the pre-existing findings.
+```
+
+### GitHub Actions — the actual CI run, not just valid YAML
+
+Every result above was run locally in this workspace. Pushing to GitHub and
+checking the real workflow run (`gh run view`, not assumed) is a distinct
+kind of evidence, and it caught something local runs couldn't: the
+**first real CI run failed**. The frontend job's `Unit tests` step
+crashed on Node 20 with `jsdom@30` (added this session via `vitest`),
+which requires Node `^22.22.2 || ^24.15.0 || >=26.0.0`. Fixed by bumping
+CI to Node 24 (bug #16 above). The **backend job passed on its first
+real run** with zero changes needed — full toolchain (pytest, ruff,
+mypy, pip-audit) green on a genuinely fresh Ubuntu runner, not just this
+workspace.
+
+```
+$ gh run view <run-id> --repo gopalchaudhary101/nexus
+✓ backend   1m24s
+X frontend  22s  — Unit tests step: node 20 / jsdom 30 incompatibility
 ```
 
 ## Performance
