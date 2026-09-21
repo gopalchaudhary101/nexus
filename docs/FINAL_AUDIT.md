@@ -258,10 +258,15 @@ mypy, pip-audit) green on a genuinely fresh Ubuntu runner, not just this
 workspace.
 
 ```
-$ gh run view <run-id> --repo gopalchaudhary101/nexus
-✓ backend   1m24s
-X frontend  22s  — Unit tests step: node 20 / jsdom 30 incompatibility
+$ gh run list --repo gopalchaudhary101/nexus --limit 2
+completed  success  Fix CI: frontend job crashed on its first real GitHub Actions run   1m30s
+completed  failure  (previous commit, before the Node 20/24 fix)                        1m28s
 ```
+
+After the Node-version fix and a second real push, both jobs passed on a
+genuinely fresh Ubuntu runner: backend (pytest/ruff/mypy/pip-audit) in
+1m25s, frontend (eslint/vitest/tsc/vite build) in 26s. Confirmed via
+`gh run list`, not assumed from the fix looking correct.
 
 ## Performance
 
